@@ -1,8 +1,7 @@
 README.txt
 
 Problem 1 
-Handwritten in three parts: Problem_1a.pdf, Problem_1b.pdf, Problem_1c.pdf.
-The names do not correspond to the problem part, but they are consecutive.
+Problem_1.pdf. 3 pages.
 
 Problem 2
 python3 Problem_2.py
