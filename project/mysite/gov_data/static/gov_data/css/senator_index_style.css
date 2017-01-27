@@ -1,0 +1,30 @@
+/*
+Created from Scratch
+*/
+
+.Republican {
+    background-color: #FF563B;
+}
+.Democrat {
+    background-color: #29859F;
+}
+.Independent{
+    background-color: #FF9E3B;
+}
+
+tr {
+    background-color: #FF9E3B;   
+}
+
+td a, td {
+    color: white
+}
+
+.button_css {
+    color:white;
+}
+
+.row-margin {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}

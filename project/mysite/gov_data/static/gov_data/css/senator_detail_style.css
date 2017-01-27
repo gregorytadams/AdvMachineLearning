@@ -1,0 +1,76 @@
+/*
+Created from Scratch
+*/
+
+a {
+    color: white;
+}
+
+path {
+    stroke: steelblue;
+    stroke-width: 1;
+    fill: none;
+}
+
+.axis {
+  shape-rendering: crispEdges;
+}
+
+#lead_table, .lead_table_row { 
+	width: 100%;
+	border: 1px solid black;
+}
+
+#lead_table {
+	margin-top: 5%;
+}
+
+.lead_table_column {
+	border: 1px solid black;
+	padding: 15px;
+}
+
+#lead_table_title {
+	font-size: 1.5em;
+	font-weight: bold;
+}
+
+tr:hover {
+	background-color: #f5f5f5;
+}
+
+body {
+	font-size: 100%;
+}
+
+div h1 {
+	font-size: 4em;
+	/*color: red;*/
+}
+
+div h3 {
+	font-size: 3em;
+	/*color: red;*/
+}
+
+#graph {
+	display: none; /*default display; gets toggled in script*/
+}
+
+#graph_title {
+	margin-top: 5%;
+	margin-bottom: -10%;
+	text-align: center;
+}
+
+#tester {
+	display: none;
+	width: 00%;
+	height: 100%;
+}
+
+.get_inline{
+	display: inline-block;
+	/*margin-left: 45%;*/
+	margin-top: 5%;
+}

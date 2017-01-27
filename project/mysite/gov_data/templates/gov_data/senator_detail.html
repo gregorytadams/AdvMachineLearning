@@ -1,0 +1,165 @@
+<!DOCTYPE HTML>
+<html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Senators</title>
+        {% load staticfiles %}
+        <link rel="stylesheet" type="text/css" href="{% static 'gov_data/css/senator_detail_style.css' %}" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.2/css/bootstrap.min.css" integrity="sha384-y3tfxAZXuh4HwSYylfB+J125MxIs6mR5FOHamPBG064zB+AFeWH94NdvaCBm8qnd" crossorigin="anonymous">
+        <script src="http://mbostock.github.com/d3/d3.v2.js"></script>
+        <script src="plotly-latest.min.js"></script> 
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script> <!--Thanks to  -->
+    </head>
+    <body>
+        <nav class="navbar navbar-dark bg-inverse">
+            <a class='btn btn-success nav-item nav-link' role='button' href = '{% url "gov_data:index" %}'>Home</a>
+            <a class='btn btn-danger nav-item nav-link' role='button' href='{% url "gov_data:bills_index" %}'>Bills</a>
+            <a class='btn btn-primary nav-item nav-link' role='button' href='{% url "gov_data:senators_index" %}'>Senators</a>
+        </nav>
+        <div class = 'container'>
+
+            <div class='row row-margin'>
+                <h1>Sen. {{senator.first}} {{senator.last}} </h1>
+                <h3> {{senator.party}} from the State of {{senator.state}}</h3>
+                <table id='lead_table'>
+                    <tr id='lead_table_title'>
+                        <td class='lead_table_column'>Congress</td>
+                        <td class='lead_table_column'>Success Score</td>
+                        <td class='lead_table_column'>Cosponsors Gathered</td>
+                        <td class='lead_table_column'>Bills Cosponsored</td>
+                    </tr>
+                {% if leadership_scores %}
+                {% for score in leadership_scores %}
+                    <tr class='lead_table_row'>
+                        <td class='lead_table_column'>{{score.congress}}</td>
+                        <td class='lead_table_column'>{{score.bill_success_score}}</td>
+                        <td class='lead_table_column'>{{score.cosponsors_in}}</td>
+                        <td class='lead_table_column'>{{score.cosponsors_out}}</td>
+                    </tr>
+                {% endfor %}
+                {% endif %}
+                    <!-- <p>Congress: {{score.congress}} Score: {{score.bill_success_score}} {{score.cosponsors_in}} {{score.cosponsors_out}}</p> -->
+                </table>
+            </div>
+            <!--function below http://blog.movalog.com/a/javascript-toggle-visibility/ -->
+            <script type="text/javascript"> 
+            /**
+            Toggles visibility on click
+            Works in conjunction with the CSS and below buttons; changes display
+            */ 
+               function toggle_visibility(id) {
+               var e = document.getElementById(id);
+               if(e.style.display == 'inline')
+                  e.style.display = 'none';
+               else
+                  e.style.display = 'inline';
+            }
+            </script>
+
+
+            <button type="button" id="graph_hider2" class="btn btn-success get_inline" onclick="toggle_visibility('tester');">Dynamic Graph</button>
+            <button type="button" id="graph_hider" class="btn btn-success get_inline" onclick="toggle_visibility('graph');">Static Graph</button>
+
+            <!--<button type="button" id="graph_hider" class="btn btn-success get_inline" onclick="toggle_visibility('graph');">Rough Graph</button> -->
+
+            <!-- help from here: https://plot.ly/javascript/getting-started/ -->
+            <div id="tester" style="width:800px;height:600px;"></div>
+                <script type='text/javascript'>
+                    /**
+                    Plots the dynamic graph shown on the senators page.
+                    */
+                    TESTER = document.getElementById('tester');
+                    Plotly.plot( TESTER, [{
+                    x: {{congress_list}},
+                    y: {{score_list}} }], {
+                    autosize: false,
+                    title: 'Leadership Score by Congress',
+                    yaxis: {title: 'Leadership Score'},
+                    xaxis: {title: 'Congress'} });
+                </script>
+            <div id="graph" class="aGraph row">
+                <h3 id="graph_title">Leadership Score by Congress<h3>
+            </div>
+            <script>
+            /* implementation influenced by http://bl.ocks.org/benjchristensen/2579599 
+            Plots the static graph on the senators' individual pages.
+            */
+            
+            // define dimensions of graph; pretty much arbitrary/style decision
+            var m = [100, 100, 100, 100]; 
+            // var w = 800 - m[1] - m[3]; 
+            // var h = 600 - m[0] - m[2]; 
+            var w = 800
+            var h = 600
+            // data and x_axis_labels arrays (lists)
+            var data = {{score_list}};
+            var x_axis_labels = {{congress_list}}
+
+            // sets boundaries of the graph
+            var x = d3.scale.linear().domain([x_axis_labels[0], x_axis_labels[x_axis_labels.length - 1] ]).range([0, w]);
+            var y = d3.scale.linear().domain([0, 20000]).range([h, 0]);
+
+
+            // create a line function that can convert data and labels into x and y points
+            var line = d3.svg.line()
+
+                .x(function(d,i) { return x(x_axis_labels[i]); })
+                .y(function(d) { return y(d); })
+
+
+                // Add an SVG element with the desired dimensions and margin.
+                var graph = d3.select("#graph").append("svg:svg")
+                    .attr("width", window.innerWidth)
+                    .attr("height", window.innerHeight)                      
+
+                      // .attr("width", w + m[1] + m[3])
+                      // .attr("height", h + m[0] + m[2])
+                    // .append("svg:g") Is this a necessary line? 
+                    .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
+
+                // makes the x-axis
+                var xAxis = d3.svg.axis().scale(x).ticks(x_axis_labels.length);
+                graph.append("svg:g")
+                      .attr("class", "x axis")
+                      .attr("transform", "translate(0," + h + ")")
+                      .call(xAxis);
+                graph.append("text")
+                    .attr("x", w / 2 )
+                    .attr("y", 1.1*h )
+                    .style("text-anchor", "middle")
+                    .text("Congress");
+
+                // makes the y-axis
+                var yAxisLeft = d3.svg.axis().scale(y).orient("left");
+                graph.append("svg:g")
+                      .attr("class", "y axis")
+                      .attr("transform", "translate(0,0)")
+                      .call(yAxisLeft);
+                graph.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("x", -200 )
+                    .attr("y", -65 )
+                    .style("text-anchor", "middle")
+                    .text("Leadership Score");
+
+                graph.append("svg:path").attr("d", line(data));
+            </script>
+
+
+            <div class='row row-margin'>
+                <h2>Bills Introduced</h2>
+                {% if bill_list %}
+                    <ul>
+                    {% for bill in bill_list %}
+                        <li><a href = '{% url "gov_data:bill_detail" bill.bill_id %}'>{{ bill.title }}</a></li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No Bills to display.</p>
+                {% endif %}
+            </div>
+        </div>
+    </body>
