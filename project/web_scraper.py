@@ -1,22 +1,43 @@
-#Miriams Web Scraper
+#My Web Scraper
 
-import urllib.request
-import urllib.error
-from bs4 import BeautifulSoup as BS
 import csv
+from selenium import webdriver
+import time
 
 
 INPUT_LINK = "https://www.congress.gov/search?q={%22source%22:%22legislation%22,%22congress%22:%22109%22,%22type%22:%22bills%22,%22bill-status%22:%22all%22,%22chamber%22:%22Senate%22}"
 
 
-def get_links(search_link):
+def get_links(search_link = INPUT_LINK):
     '''
-    Spider/crawler thing
+    Spider/crawler thingy
     '''
-    pass
+    links = []
+    driver = webdriver.Chrome()
+    driver.get(search_link)
+    while True: 
+        for span in driver.find_elements_by_class_name("result-heading"):
+            a = span.find_element_by_tag_name("a")
+            links.append(a.get_attribute('href'))
+        try:
+            new_page = driver.find_element_by_class_name('next').get_attribute('href')
+            driver.get(new_page)
+            continue
+        except:
+            break
+    return links[::2] #it's giving me 2 of each link.  Tbh, this is easier than figuring out why... 
+
 
 def get_bill_text(url):
-    pass
+    for index, letter in enumerate(url):
+        if letter == '?':
+            url = url[:index] + '/text' + url[index:]
+    return url
+    # driver.get(url)
+
+    #     html = c.read().decode('utf-8')
+    #     soup = BS(html, 'html.parser')
+    # pass
 
 def save_bill_text(bill_text, file_location_name):
     with open(file_location_name, 'w') as f:
@@ -26,10 +47,11 @@ def save_bill_text(bill_text, file_location_name):
 def go(initial_link):
     counter = 0
     list_of_urls = get_links(INPUT_LINK)
-    for url in list_of_urls:
+    for url in list_of_urls: #for some reason I really can't figure out, it's giving me 2 of each link.  This is easier.
         bill_text = get_bill_text(ur)
         save_bill_text(bill_text, "law" + str(counter))
     print("saved {} laws".format(counter))
+    #REMEMBER TO driver.close()
 
 
 
