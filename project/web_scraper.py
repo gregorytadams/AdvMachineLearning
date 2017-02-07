@@ -32,28 +32,26 @@ def get_bill_text(url):
     for index, letter in enumerate(url):
         if letter == '?':
             url = url[:index] + '/text' + url[index:]
-    return url
-    # driver.get(url)
-
-    #     html = c.read().decode('utf-8')
-    #     soup = BS(html, 'html.parser')
-    # pass
+    driver.get(url)
+    text = driver.find_elements_by_tag_name('p').text
+    print(text)
+    return(text)
 
 def save_bill_text(bill_text, file_location_name):
     with open(file_location_name, 'w') as f:
         f.write(bill_text)
     print("saved {}".format(file_location_name))
 
-def go(initial_link):
+def go(initial_link = INPUT_LINK):
     counter = 0
-    list_of_urls = get_links(INPUT_LINK)
-    for url in list_of_urls: #for some reason I really can't figure out, it's giving me 2 of each link.  This is easier.
-        bill_text = get_bill_text(ur)
+    list_of_urls = get_links(initial_link)
+    for url in list_of_urls: 
+        bill_text = get_bill_text(url)
         save_bill_text(bill_text, "law" + str(counter))
     print("saved {} laws".format(counter))
     #REMEMBER TO driver.close()
 
-
+go()
 
 
 
