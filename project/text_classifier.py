@@ -3,17 +3,15 @@
 # Note: I borrowed heavily (incl. minimal copy/paste of individual lines of code) from the sklearn 
 # tutorial found at http://scikit-learn.org/stable/tutorial/text_analytics/working_with_text_data.html
 
-# http://stats.stackexchange.com/questions/158027/how-do-i-improve-the-accuracy-of-my-supervised-document-classification-model
-
 
 print("Importing...")
 from sklearn import svm
 from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import SGDClassifier
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, precision_recall_curve, auc, \
-                            roc_curve, classification_report
-from sklearn.model_selection import KFold, StratifiedKFold, GridSearchCV
+# from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, precision_recall_curve, auc, \
+#                             roc_curve, classification_report
+from sklearn.model_selection import GridSearchCV # KFold, StratifiedKFold,
 from sklearn.pipeline import Pipeline
 from os import walk
 from string import digits, punctuation
@@ -21,110 +19,90 @@ import pandas as pd
 from copy import deepcopy
 print("Finished importing")
 
-K = 2 # This is used for both cross-validation and bootstrapping
+# Make this true to (1) make the code run in any sort of manageable timeframe and (2) not burn out your computer
+IM_JUST_HERE_TO_TEST = False 
+
+K = 3 
 SENTIMENT_CATEGORIES = ['passed', 'not_passed']
+
 PL = [('vect', CountVectorizer()), ('tfidf', TfidfTransformer()), None]
 
-CLFS = {'NB': ('clf', MultinomialNB()), \
-        # 'SGD': ('clf', SGDClassifier()), \
-        # 'SVM': ('clf', svm.SVC())
+CLFS = {'NB': ('NB', MultinomialNB()), \
+        'SGD': ('SGD', SGDClassifier()), \
+        'SVC': ('SVC', svm.SVC())
 }
 
-# For REALSIES
+# Actual search, takes forever (I had to split it up and run each chunk overnight, even parallelized on 8 cores in CSIL)
 
-# CLF_PARAMS = {'NB': {'clf__alpha': (10, 1, 1e-1, 1e-2, 1e-3, 1e-4)}, \
-#               'SGD': { 'clf__loss': ['hinge','log','perceptron'], 'clf__penalty': ['l2','l1','elasticnet'], 'clf__class_weight': ['balanced', None]}, \
-#               'SVM': {'clf__C' :[0.00001, 0.0001, 0.001,0.01,0.1,1,10],'clf__kernel':['linear', 'poly', 'rbf', 'sigmoid']}
-#             }
-
-# BASIC_PARAMS = {'vect__ngram_range': [(1, 1), (1, 2), (1,3)], 'vect__binary': (True, False), \
-#                 'tfidf__use_idf': (True, False), 'tfidf__norm': ('l1', 'l2', None), 'tfidf__smooth_idf': (True, False), \
-#                 'tfidf__sublinear_tf': (True, False)}
-
-# For TESTS
-
-CLF_PARAMS = {'NB': {'clf__alpha': (10, 1e-4)}, \
-              # 'SGD': { 'clf__loss': ['hinge'], 'clf__penalty': ['elasticnet'], 'clf__class_weight': ['balanced', None]}, \
-              # 'SVM': {'clf__C' :[0.00001, 10],'clf__kernel':['poly', 'sigmoid']}
+CLF_PARAMS = {'NB': {'NB__alpha': (10, 1, 1e-1, 1e-2, 1e-3, 1e-4)}, \
+              'SGD': { 'SGD__loss': ['hinge','log','perceptron'], 'SGD__penalty': ['l2','l1','elasticnet'], 'SGD__class_weight': ['balanced', None]}, \
+              'SVC': {'SVC__C' :[0.00001, 0.0001, 0.001,0.01,0.1,1,10], 'SVC__kernel':['linear', 'poly', 'rbf', 'sigmoid']}
             }
 
-BASIC_PARAMS = {'vect__ngram_range': [(1, 1), (1,3)], 'vect__binary': (True, False), \
-                'tfidf__use_idf': (True, False), 'tfidf__norm': ('l1', None), 'tfidf__smooth_idf': (True, False), \
+BASIC_PARAMS = {'vect__ngram_range': [(1, 1), (1, 2), (1,3)], 'vect__binary': (True, False), \
+                'tfidf__use_idf': (True, False), 'tfidf__norm': ('l1', 'l2', None), 'tfidf__smooth_idf': (True, False), \
                 'tfidf__sublinear_tf': (True, False)}
+
+# For TESTS; takes ~20 mins on CSIL computers if IM_JUST_HERE_TO_TEST = True
+
+# CLF_PARAMS = {'NB': {'NB__alpha': (1, 0.1)}, \
+#               'SGD': { 'SGD__loss': ['hinge'], 'SGD__class_weight': ['balanced', None]}, \
+#               'SVM': {'SVM__C' :[0.00001, 10], 'SVM__kernel':['linear']}
+#             }
+
+# BASIC_PARAMS = {'vect__ngram_range': [(1, 1), (1,3)],  \
+#                 'tfidf__use_idf': (True, False), \
+#                 'tfidf__sublinear_tf': (True, False)} 
 
 def define_parameters(pl = PL, clfs = CLFS, clf_params = CLF_PARAMS, basic_params = BASIC_PARAMS):
     '''
-    returns list of tuples [(pipeline, parameters), ...]
+    Generates the appropriate pipeline/parameter pairs
+
+    inputs:
+    pl, pipeline sans classifier
+    clfs, dict of classifier tuples for pipeline
+    clf_params, classifier parameters to search through
+    basic_params, non-classifier parameters to search through
+
+    outputs:
+    list_of_pairs, list of tuples [(pipeline, parameters), ...]
     '''
     list_of_pairs = []
-    for model in clfs:
-        pl[2] = clfs[model]
+    for model in CLFS:
+        pl_to_use = deepcopy(pl)
+        pl_to_use[2] = CLFS[model]
         new_params = deepcopy(basic_params)
-        # print(new_params is basic_params)
-        # print(new_params == basic_params)
-        # print(basic_params == BASIC_PARAMS)
-        # print(basic_params is BASIC_PARAMS)
-        # for key in new_params:
-        #     print("Key: {}".format(key))
-        #     print("Params: {}".format(new_params[key]))
-        # print(clf_params[model])
         new_params.update(clf_params[model]) # there's apparently no better way to merge 2 dicts.  Wierd...
-        # print(new_params == basic_params)
-        # print(new_params)
-        list_of_pairs.append((Pipeline(pl), new_params))
+        plc = Pipeline(pl_to_use)
+        list_of_pairs.append((plc, new_params))
+        print(len(list_of_pairs))
     return list_of_pairs
 
 
+def build_and_validate(data, labels, just_testing = IM_JUST_HERE_TO_TEST):
+    '''
+    Builds and tests the models for each of the classifiers and parameters.
 
+    Inputs:
+    data, labels; from fetch_and_format
+    just_testing, a bool indicating whether you want real results, or want to not break your computer 
 
-# def define_parameters():
-#     text_clf = Pipeline([('vect', CountVectorizer()), ('tfidf', TfidfTransformer()), ('clf', MultinomialNB())])
-#     text_clf_SVM = Pipeline([('vect', CountVectorizer()), ('tfidf', TfidfTransformer()), ('clf', SGDClassifier())])
-#     # The actual
-#     # parameters_NB = {'vect__ngram_range': [(1, 1), (1, 2), (1,3)], 'vect__binary': (True, False), \
-#     #             'tfidf__use_idf': (True, False), 'tfidf__norm': ('l1', 'l2', None), 'tfidf__smooth_idf': (True, False), \
-#     #             'tfidf__sublinear_tf': (True, False), 
-#     #             'clf__alpha': (10, 1, 1e-1, 1e-2, 1e-3, 1e-4)}
-
-#     # For test, so it doesn't take forever... lol
-#     parameters = {'vect__ngram_range': [(1, 1)], 'vect__binary': (True, False), \
-#             'tfidf__use_idf': (True, False), 'tfidf__norm': ('l1', None), 'tfidf__smooth_idf': (True, False), \
-#             'tfidf__sublinear_tf': (True, False), 
-#             'clf__alpha': (10, 1e-4)}
-#     return text_clf, parameters 
-
-
-def build_and_validate(data, labels):
-    # i=0
+    Outputs the model evaulation report to a csv.
+    '''
+    i = 0
     pairs = define_parameters()
-    # print(pairs)
-    # print("========================================")
-    # for i in pairs:
-    #     print(i[0])
-    #     print('--------------------------------------------------')
-    #     print(i[1])
-    #     print('===================================================')
     for tup in pairs:
-        print(tup[0])
-        print("-------------------------------------------")
-        print(tup[1])
-        print("=============================================")
         gs_clf = GridSearchCV(tup[0], tup[1], n_jobs = -1, cv = K) # -1 parallelizes on all available cores
-        gs_clf = gs_clf.fit(data[:400], data[:400])
-        for param_name in sorted(parameters.keys()):
+        if just_testing:
+            gs_clf = gs_clf.fit(data[:100], labels[:100])
+        else:
+            gs_clf = gs_clf.fit(data, labels)
+        for param_name in sorted(tup[1].keys()):
             print("%s: %r" % (param_name, gs_clf.best_params_[param_name]))
         df = pd.DataFrame(gs_clf.cv_results_)
-        df.to_csv('test_output_{}.csv'.format(text_clf))
+        df.to_csv('test_output_{}.csv'.format(i))
+        i += 1
         gs_clf = None
-
-
-def remove_junk(string):
-    strimg = string.lower()
-    remove_digits = string.maketrans('', '', digits)
-    remove_punctuation = string.maketrans('', '', punctuation)
-    remove_newlines = string.maketrans('', '', '\n')
-    res = string.translate(remove_digits).translate(remove_punctuation).translate(remove_newlines)
-    return res
 
 
 def fetch_and_format():
@@ -152,15 +130,29 @@ def fetch_and_format():
     return data, labels
 
 
+def remove_junk(string):
+    '''
+    Cleans up the text of the bills.
+    '''
+    string = string.lower()
+    remove_digits = string.maketrans('', '', digits)
+    remove_punctuation = string.maketrans('', '', punctuation)
+    remove_newlines = string.maketrans('', '', '\n')
+    res = string.translate(remove_digits).translate(remove_punctuation).translate(remove_newlines)
+    return res
+
+
 def go():
     '''
-    Master function. Gathers and formats data, builds models and outputs metrics to be reported.
+    Master function.
     '''
     data, labels = fetch_and_format()
-    counts, tfidf = build_and_validate(data, labels)
-    return sum(counts)/len(counts), sum(tfidf)/len(tfidf)
+    build_and_validate(data, labels)
+    
 
 if __name__ == "__main__":
-    f1_counts, f1_tfidf = go()
-    print("F1 score for counts: {}".format(f1_counts))
-    print("F1 score for tfidf: {}".format(f1_tfidf))
+    go()
+
+
+
+
