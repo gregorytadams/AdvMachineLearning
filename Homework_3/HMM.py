@@ -30,10 +30,15 @@ class HMM(object):
 
 
 	def train(self, observations):
-		# given observations, idk dude
-		pass
+		fwd_T = _self._get_forward_likelihood(observations)
+		sum_xi = 0
+		sum_gamma = 0
+		for t, obs in observations:
+			sum_xi += _get_xi(observations)
+			sum_gamma += _get_gamma(observations)
 
-	def _get_not_quite_chi(observations, i, j, t):
+
+	def _get_not_quite_xi(observations, i, j, t):
 		'''
 		i and j are states
 		t is the index of observations we are at
@@ -43,6 +48,9 @@ class HMM(object):
 		aij = self.transmission_prob[i+1][j+1]
 		bij = self.emission_prob[observations[t]][j]
 		return fwd * back * aij * bij
+
+	def _get_gamma(observations):
+
 
 	def _get_chi(all_observations, sub_observations, i, j, t):
 		return self._get_not_quite_chi(sub_observations, i, j, t) / self._get_forward_likelihood(all_observations)
@@ -72,7 +80,7 @@ class HMM(object):
 
 	def _get_backward_likelihood(self, observations):
 		'''
-		also gets likelihood set of observations was produced given a model but... differently.
+		also gets likelihood set of observations was produced given a model but... backwards.
 		'''
 		trellis = np.array([ [0.0]*len(observations) for i in range(self.num_states)])
 		# print(trellis)
@@ -118,11 +126,6 @@ class HMM(object):
 		return self._get_forward_likelihood(observations)
 		# vit = self._viterbi(observations)
 		# back = self._get_backward_likelihood(observations)
-
-
-
-
-
 
 def go():
 	my_model = HMM(FIRST_TEST_A, FIRST_TEST_B)

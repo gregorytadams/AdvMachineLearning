@@ -2,7 +2,6 @@ README.txt
 Homework 3
 
 Problem 1
-Pseudocode:
 
 def split_words(string):
     if string = '':
@@ -24,7 +23,7 @@ For efficiency's sake, you can minimize calls by replacing len(string) with the 
 This algorithm assumes that longer words have a higher quality than shorter words (e.g. "meet" has a higher quality than "me"). 
 
 
-Problem 2:
+Problem 2
 
 Formulas:
 
@@ -80,5 +79,4 @@ b)
     P(ii) = 1 * (1/(1+100)) * 0.4 * (100/(100+100)) * 0.44 = 0.00087
     P(i) > P(ii)
 
-Problem 3: python3 problem_3.py
-Most HMM code in HMM.py
+Problem 3: HMM code in HMM.py.  I was not able to finish the forward-backward algorithm.
