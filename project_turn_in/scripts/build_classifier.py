@@ -1,7 +1,6 @@
 # Rebuilt (from scratch!) version of my magic loop.
 # Greg Adams
 
-from __future__ import division
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing, cross_validation, svm, metrics
